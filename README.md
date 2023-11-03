@@ -3,11 +3,30 @@ GitHub Action to deploy Assets to MuleSoft Anypoint Exchange.
 
 This action's goal is to deploy RAML assets to Anypoint Exchange.  
 
-## Input Parameters
-- Anypoint Username
-- Anypoint Password
-- Anypoint Organization Id / Business Group Id
+# Usage
+Here's an example on how to use this action:
 
+```yaml
+jobs:
+  deploy-to-exchange:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to Exchange
+      uses: josedagama/mulesoft-exchange-upload@1.0.0
+      with:
+        anypoint-organization-id: ${{ secrets.anypoint_platform_organization_id }}
+        anypoint-username: ${{ secrets.anypoint_platform_username }}
+        anypoint-password: ${{ secrets.anypoint_platform_password }}
+```
+
+## Input Parameters
+- **anypoint-organization-id**
+  - Anypoint Organization Id / Business Group Id
+- **anypoint-username**
+  - Anypoint Username
+- **anypoint-password**
+  - Anypoint Password
+  - 
 ## Structure of the repository
 - exchange.json
   - File from where the configuration of the asset is read
