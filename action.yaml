@@ -41,4 +41,4 @@ runs:
     - name: Deploy Asset to Exchange
       id: deploy-asset
       shell: bash
-      run: ${{ github.action_path }}/scripts/deploy2exchange.sh ${{ inputs.anypoint-organization-id }} ${{ inputs.anypoint-username }} ${{ inputs.anypoint-password }}
+      run: ${{ github.action_path }}/scripts/deploy2exchange.sh "${{ inputs.anypoint-organization-id }}" "${{ inputs.anypoint-username }}" "${{ inputs.anypoint-password }}"
