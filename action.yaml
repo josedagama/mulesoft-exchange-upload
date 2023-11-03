@@ -1,0 +1,44 @@
+name: 'Mulesoft Exchange Upload'
+description: 'GitHub Action to deploy Assets to MuleSoft Anypoint Exchange'
+author: José da Gama
+branding:
+  icon: 'share'
+  color: 'blue'
+inputs:
+  anypoint-organization-id:
+    description: Anypoint Organization ID
+    required: true
+  anypoint-username:
+    description: Anypoint Username
+    required: true
+  anypoint-password:
+    description: Anypoint Password
+    required: true
+runs:
+  using: "composite"
+  steps:
+    # Prep
+    - name: Checkout this repo
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    # Install all dependencies
+    - name: Install jq
+      uses: dcarbone/install-jq-action@v1.0.1
+      
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v3.8.1
+
+    - name: Install anypoint-cli-v4 & anypoint-cli-exchange-plugin
+      shell: bash
+      run: |
+        sudo apt-get update
+        npm install -g anypoint-cli-v4
+        anypoint-cli-v4 plugins:install anypoint-cli-exchange-plugin
+
+    # Run
+    - name: Deploy Asset to Exchange
+      id: deploy-asset
+      shell: bash
+      run: ${{ github.action_path }}/scripts/deploy2exchange.sh ${{ inputs.anypoint-organization-id }} ${{ inputs.anypoint-username }} ${{ inputs.anypoint-password }}

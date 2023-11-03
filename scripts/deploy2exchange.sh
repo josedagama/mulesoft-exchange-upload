@@ -1,0 +1,93 @@
+#!/bin/bash
+ANYPOINT_ORGANIZATION_ID=$1
+ANYPOINT_USERNAME=$2
+ANYPOINT_PASSWORD=$3
+
+API_SPEC_ZIP_NAME=apispec.zip
+API_SPEC_EXCHANGE_JSON_FILE_NAME=exchange.json
+
+echo Checking current folder
+pwd
+
+echo Listing files of current folder: ls 
+ls
+		
+echo Removing any possible old $API_SPEC_ZIP_NAME
+rm -f $API_SPEC_ZIP_NAME
+
+echo Creating $API_SPEC_ZIP_NAME with all files except $API_SPEC_EXCHANGE_JSON_FILE_NAME
+zip -r $API_SPEC_ZIP_NAME . --exclude $API_SPEC_EXCHANGE_JSON_FILE_NAME *.git* *.md *DS_Store* *.project
+
+echo Listing files of current folder: ls 
+ls
+
+
+echo ""
+echo Parsing $API_SPEC_EXCHANGE_JSON_FILE_NAME
+API_SPEC_EXCHANGE_JSON_FILE_CONTENT=$(<$API_SPEC_EXCHANGE_JSON_FILE_NAME)
+echo "######### $API_SPEC_EXCHANGE_JSON_FILE_NAME #############"
+echo "$API_SPEC_EXCHANGE_JSON_FILE_CONTENT"
+echo "######### END $API_SPEC_EXCHANGE_JSON_FILE_NAME #########"
+echo ""
+
+# API_SPEC_ASSET_ID
+API_SPEC_ASSET_ID=$(jq -r '.assetId' $API_SPEC_EXCHANGE_JSON_FILE_NAME)
+
+# API_SPEC_VERSION
+API_SPEC_VERSION=$(jq -r '.version' $API_SPEC_EXCHANGE_JSON_FILE_NAME)
+# API_SPEC_MAJOR_VERSION
+API_SPEC_MAJOR_VERSION=$(jq -r '.version | split(".") | .[0]' $API_SPEC_EXCHANGE_JSON_FILE_NAME)
+# API_SPEC_MAIN_FILE
+API_SPEC_MAIN_FILE=$(jq -r '.main' $API_SPEC_EXCHANGE_JSON_FILE_NAME)
+# API_SPEC_DEPENDENCIES
+#	.dependencies | length
+
+echo ""
+echo "######### VARS values #############"
+echo "     API_SPEC_ASSET_ID="$API_SPEC_ASSET_ID
+echo "      API_SPEC_VERSION="$API_SPEC_VERSION
+echo "API_SPEC_MAJOR_VERSION="$API_SPEC_MAJOR_VERSION
+echo "    API_SPEC_MAIN_FILE="$API_SPEC_MAIN_FILE
+echo " API_SPEC_DEPENDENCIES="$API_SPEC_DEPENDENCIES
+echo "######### END VARS values #########"
+echo ""
+
+#Parsing dependencies
+API_SPEC_DEPENDENCIES=""
+for row in $(echo "${API_SPEC_EXCHANGE_JSON_FILE_CONTENT}" | jq -c '.dependencies[] '); do
+	#echo $(echo $row | jq '.groupId + ":" + .assetId + ":" + .version')
+	API_SPEC_DEPENDENCIES="${API_SPEC_DEPENDENCIES},"$(echo $row | jq -r '.groupId + ":" + .assetId + ":" + .version')
+	#echo ${row}
+	#echo $API_SPEC_DEPENDENCIES
+done
+#Removing first ',' character of the dependencies
+API_SPEC_DEPENDENCIES="${API_SPEC_DEPENDENCIES:1}"
+
+echo ""
+
+#Command to be used
+ANYPOINT_CLI_PUBLIC_ASSET_COMMAND="anypoint-cli-v4 exchange:asset:upload"
+ANYPOINT_CLI_PUBLIC_ASSET_COMMAND="${ANYPOINT_CLI_PUBLIC_ASSET_COMMAND} --username ${ANYPOINT_USERNAME}"
+ANYPOINT_CLI_PUBLIC_ASSET_COMMAND="${ANYPOINT_CLI_PUBLIC_ASSET_COMMAND} --password ${ANYPOINT_PASSWORD}"
+ANYPOINT_CLI_PUBLIC_ASSET_COMMAND="${ANYPOINT_CLI_PUBLIC_ASSET_COMMAND} --organization ${ANYPOINT_ORGANIZATION_ID}"
+ANYPOINT_CLI_PUBLIC_ASSET_COMMAND="${ANYPOINT_CLI_PUBLIC_ASSET_COMMAND} --name ${API_SPEC_ASSET_ID}"
+ANYPOINT_CLI_PUBLIC_ASSET_COMMAND="${ANYPOINT_CLI_PUBLIC_ASSET_COMMAND} --type rest-api"
+ANYPOINT_CLI_PUBLIC_ASSET_COMMAND="${ANYPOINT_CLI_PUBLIC_ASSET_COMMAND} --properties {\"apiVersion\":\"v${API_SPEC_MAJOR_VERSION}\",\"mainFile\":\"${API_SPEC_MAIN_FILE}\"}"
+ANYPOINT_CLI_PUBLIC_ASSET_COMMAND="${ANYPOINT_CLI_PUBLIC_ASSET_COMMAND} --files {\"raml.zip\":\"./${API_SPEC_ZIP_NAME}\"}"
+
+if [ -z "$API_SPEC_DEPENDENCIES" ]
+then
+	echo "This Spec has NO dependencies"
+else
+	echo "This Spec has dependencies"
+	echo API_SPEC_DEPENDENCIES=$API_SPEC_DEPENDENCIES
+	ANYPOINT_CLI_PUBLIC_ASSET_COMMAND="${ANYPOINT_CLI_PUBLIC_ASSET_COMMAND} --dependencies ${API_SPEC_DEPENDENCIES}" 
+fi
+ANYPOINT_CLI_PUBLIC_ASSET_COMMAND="${ANYPOINT_CLI_PUBLIC_ASSET_COMMAND} ${API_SPEC_ASSET_ID}/${API_SPEC_VERSION}"
+
+echo ""
+echo $ANYPOINT_CLI_PUBLIC_ASSET_COMMAND
+echo ""
+echo "Deploying..."
+echo ""
+$ANYPOINT_CLI_PUBLIC_ASSET_COMMAND
