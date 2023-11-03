@@ -1,4 +1,4 @@
-# mulesoft-exchange-upload
+# Mulesoft Exchange Upload
 GitHub Action to deploy Assets to MuleSoft Anypoint Exchange.  
 
 This action's goal is to deploy RAML assets to Anypoint Exchange.  
